@@ -1,0 +1,21 @@
+# ninja log v6
+3798	3975	7656445481561561	aaaaaaaa.exe	cf785c9feb36e681
+154	1999	7656448382577079	CMakeFiles/aaaaaaaa.dir/mainwindow.cpp.obj	e3bf035a6b55b759
+25	154	7656448381286786	E:/calcLab/build/Desktop_Qt_shared_MinGW_w64_MINGW64_MSYS2-Debug/aaaaaaaa_autogen/mocs_compilation.cpp	1c4c6cc30f43a810
+523	2247	7656442347186933	CMakeFiles/aaaaaaaa.dir/main.cpp.obj	26109a171f392951
+25	154	7656448381286786	E:/calcLab/build/Desktop_Qt_shared_MinGW_w64_MINGW64_MSYS2-Debug/aaaaaaaa_autogen/timestamp	1c4c6cc30f43a810
+519	2305	7656442347156928	CMakeFiles/aaaaaaaa.dir/aaaaaaaa_autogen/mocs_compilation.cpp.obj	4fa469b2a265627f
+25	154	7656448381286786	aaaaaaaa_autogen/mocs_compilation.cpp	1c4c6cc30f43a810
+25	154	7656448381286786	aaaaaaaa_autogen/timestamp	1c4c6cc30f43a810
+28	165	7656448970984911	aaaaaaaa_autogen/timestamp	1c4c6cc30f43a810
+28	165	7656448970984911	aaaaaaaa_autogen/mocs_compilation.cpp	1c4c6cc30f43a810
+28	165	7656448970984911	E:/calcLab/build/Desktop_Qt_shared_MinGW_w64_MINGW64_MSYS2-Debug/aaaaaaaa_autogen/timestamp	1c4c6cc30f43a810
+28	165	7656448970984911	E:/calcLab/build/Desktop_Qt_shared_MinGW_w64_MINGW64_MSYS2-Debug/aaaaaaaa_autogen/mocs_compilation.cpp	1c4c6cc30f43a810
+165	3635	7656448972355225	CMakeFiles/aaaaaaaa.dir/mainwindow.cpp.obj	e3bf035a6b55b759
+3635	3793	7656449007058484	aaaaaaaa.exe	cf785c9feb36e681
+14	161	7656451378229862	aaaaaaaa_autogen/timestamp	1c4c6cc30f43a810
+14	161	7656451378229862	aaaaaaaa_autogen/mocs_compilation.cpp	1c4c6cc30f43a810
+14	161	7656451378229862	E:/calcLab/build/Desktop_Qt_shared_MinGW_w64_MINGW64_MSYS2-Debug/aaaaaaaa_autogen/timestamp	1c4c6cc30f43a810
+14	161	7656451378229862	E:/calcLab/build/Desktop_Qt_shared_MinGW_w64_MINGW64_MSYS2-Debug/aaaaaaaa_autogen/mocs_compilation.cpp	1c4c6cc30f43a810
+161	3878	7656451379698675	CMakeFiles/aaaaaaaa.dir/mainwindow.cpp.obj	e3bf035a6b55b759
+3878	4074	7656451416871520	aaaaaaaa.exe	cf785c9feb36e681
