@@ -38,16 +38,15 @@ struct qt_meta_tag_ZN10MainWindowE_t {};
 #ifdef QT_MOC_HAS_STRINGDATA
 static constexpr auto qt_meta_stringdata_ZN10MainWindowE = QtMocHelpers::stringData(
     "MainWindow",
-    "clicknum",
+    "on_digit_pushed",
     "",
-    "operatorClicked",
-    "C",
-    "CE",
-    "on_pbdot_clicked",
-    "changer",
-    "calc",
-    "setButtonsEnabled",
-    "enabled"
+    "on_operator_pushed",
+    "on_equal_pushed",
+    "on_dot_pushed",
+    "on_inverse_pushed",
+    "on_CE_pushed",
+    "lclear",
+    "on_mem_pushed"
 );
 #else  // !QT_MOC_HAS_STRINGDATA
 #error "qtmochelpers.h not found or too old."
@@ -74,7 +73,7 @@ Q_CONSTINIT static const uint qt_meta_data_ZN10MainWindowE[] = {
        6,    0,   66,    2, 0x08,    5 /* Private */,
        7,    0,   67,    2, 0x08,    6 /* Private */,
        8,    0,   68,    2, 0x08,    7 /* Private */,
-       9,    1,   69,    2, 0x08,    8 /* Private */,
+       9,    0,   69,    2, 0x08,    8 /* Private */,
 
  // slots: parameters
     QMetaType::Void,
@@ -83,8 +82,8 @@ Q_CONSTINIT static const uint qt_meta_data_ZN10MainWindowE[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Bool,
-    QMetaType::Void, QMetaType::Bool,   10,
+    QMetaType::Void,
+    QMetaType::Void,
 
        0        // eod
 };
@@ -98,23 +97,22 @@ Q_CONSTINIT const QMetaObject MainWindow::staticMetaObject = { {
     qt_incomplete_metaTypeArray<qt_meta_tag_ZN10MainWindowE_t,
         // Q_OBJECT / Q_GADGET
         QtPrivate::TypeAndForceComplete<MainWindow, std::true_type>,
-        // method 'clicknum'
+        // method 'on_digit_pushed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'operatorClicked'
+        // method 'on_operator_pushed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'C'
+        // method 'on_equal_pushed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'CE'
+        // method 'on_dot_pushed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_pbdot_clicked'
+        // method 'on_inverse_pushed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'changer'
+        // method 'on_CE_pushed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'calc'
-        QtPrivate::TypeAndForceComplete<bool, std::false_type>,
-        // method 'setButtonsEnabled'
+        // method 'lclear'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<bool, std::false_type>
+        // method 'on_mem_pushed'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
     >,
     nullptr
 } };
@@ -124,18 +122,18 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
     auto *_t = static_cast<MainWindow *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
-        case 0: _t->clicknum(); break;
-        case 1: _t->operatorClicked(); break;
-        case 2: _t->C(); break;
-        case 3: _t->CE(); break;
-        case 4: _t->on_pbdot_clicked(); break;
-        case 5: _t->changer(); break;
-        case 6: { bool _r = _t->calc();
-            if (_a[0]) *reinterpret_cast< bool*>(_a[0]) = std::move(_r); }  break;
-        case 7: _t->setButtonsEnabled((*reinterpret_cast< std::add_pointer_t<bool>>(_a[1]))); break;
+        case 0: _t->on_digit_pushed(); break;
+        case 1: _t->on_operator_pushed(); break;
+        case 2: _t->on_equal_pushed(); break;
+        case 3: _t->on_dot_pushed(); break;
+        case 4: _t->on_inverse_pushed(); break;
+        case 5: _t->on_CE_pushed(); break;
+        case 6: _t->lclear(); break;
+        case 7: _t->on_mem_pushed(); break;
         default: ;
         }
     }
+    (void)_a;
 }
 
 const QMetaObject *MainWindow::metaObject() const

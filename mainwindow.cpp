@@ -1,36 +1,25 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QPushButton>
 #include <QMessageBox>
-#include <QVector>
-#include <QStack>
-#include <QRegularExpression>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->leRes->setText("0");
 
-    QList<QPushButton *> numButtons = {
-        ui->pb_0, ui->pb_1, ui->pb_2, ui->pb_3, ui->pb_4,
-        ui->pb_5, ui->pb_6, ui->pb_7, ui->pb_8, ui->pb_9
-    };
-    for (QPushButton *btn : numButtons)
-        connect(btn, &QPushButton::clicked, this, &MainWindow::clicknum);
+    state = FirstDigit;
+    first_number = 0;
+    second_number = 0;
+    mem = 0;
 
-    connect(ui->pbdot, &QPushButton::clicked, this, &MainWindow::on_pbdot_clicked);
+    is_first_oper = true;
+    after_operation = false;
+    after_equal = false;
+    mem_ok = false;
+    prev_operation = "+";
 
-    QList<QPushButton*> opButtons = {
-        ui->pbpl, ui->pbmin, ui->pbpr, ui->pbdiv
-    };
-    for (QPushButton *btn : opButtons)
-        connect(btn, &QPushButton::clicked, this, &MainWindow::operatorClicked);
-
-    connect(ui->pbequal, &QPushButton::clicked, [this]() { calc(); });
-    connect(ui->pb_C, &QPushButton::clicked, this, &MainWindow::C);
-    connect(ui->pb_CE, &QPushButton::clicked, this, &MainWindow::CE);
-    connect(ui->pbplmin, &QPushButton::clicked, this, &MainWindow::changer);
+    connectButtons();
 }
 
 MainWindow::~MainWindow()
@@ -38,284 +27,191 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::clicknum()
+void MainWindow::connectButtons()
 {
-    if (errorState) return;
+    QPushButton* digits[10] = {
+        ui->pb_0, ui->pb_1, ui->pb_2, ui->pb_3, ui->pb_4,
+        ui->pb_5, ui->pb_6, ui->pb_7, ui->pb_8, ui->pb_9
+    };
 
-    QString text = dynamic_cast<QPushButton*>(sender())->text();
-    QString current = ui->leRes->text();
+    for (int i = 0; i < 10; ++i)
+        connect(digits[i], SIGNAL(clicked()), this, SLOT(on_digit_pushed()));
 
-    if (wasJustEvaluated) {
-        // Пользователь начал новый ввод после "=" → начать с чистого числа
-        ui->leRes->setText(text);
-        wasJustEvaluated = false;
-        newInputAfterEval = true;
-        ui->lbl_history->clear();
-    }
-    else if (current == "0" || current == "Ошибка вычисления") {
-        ui->leRes->setText(text);
-    }
-    else {
-        ui->leRes->setText(current + text);
-    }
+    connect(ui->pbpl, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
+    connect(ui->pbmin, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
+    connect(ui->pbpr, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
+    connect(ui->pbdiv, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
+
+    connect(ui->pbequal, SIGNAL(clicked()), this, SLOT(on_equal_pushed()));
+    connect(ui->pb_C, SIGNAL(clicked()), this, SLOT(lclear()));
+    connect(ui->pb_CE, SIGNAL(clicked()), this, SLOT(on_CE_pushed()));
+    connect(ui->pbdot, SIGNAL(clicked()), this, SLOT(on_dot_pushed()));
+    connect(ui->pbplmin, SIGNAL(clicked()), this, SLOT(on_inverse_pushed()));
+
+    connect(ui->pb_MC, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
+    connect(ui->pb_MR, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
+    connect(ui->pb_MS, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
+    connect(ui->pb_Mpl, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
+    connect(ui->pb_Mmin, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
 }
 
-void MainWindow::on_pbdot_clicked()
+void MainWindow::on_digit_pushed()
 {
-    if (errorState) return;
+    QPushButton* btn = (QPushButton*)sender();
+    QString digit = btn->text();
 
-    QString current = ui->leRes->text();
-    if (wasJustEvaluated || current == "Ошибка вычисления") {
-        ui->leRes->setText("0.");
-        wasJustEvaluated = false;
-        newInputAfterEval = true;
-        return;
+    if (state == FirstDigit) {
+        if (after_equal)
+            lclear();
+        ui->leRes->setText("");
+        if (digit != "0")
+            state = InputNumber;
     }
 
-    QStringList parts = current.split(QRegularExpression("[+\\-*/]"), Qt::SkipEmptyParts);
-    QString lastPart = parts.isEmpty() ? "" : parts.last();
-    if (!lastPart.contains(".")) {
-        ui->leRes->setText(current + ".");
-    }
+    ui->leRes->setText(ui->leRes->text() + digit);
 }
 
-void MainWindow::operatorClicked()
+void MainWindow::on_operator_pushed()
 {
-    if (errorState) return;
+    QPushButton* btn = (QPushButton*)sender();
+    QString op = btn->text();
 
-    QString op = dynamic_cast<QPushButton*>(sender())->text();
-    QString current = ui->leRes->text();
+    second_number = ui->leRes->text().toDouble();
+    equal_operation = op;
 
-    if (wasJustEvaluated && newInputAfterEval) {
-        // Ввели новое число после "=" → начинаем новое выражение
-        ui->lbl_history->setText(current + " " + op + " ");
-        ui->leRes->clear();
-        lastResult = current.toDouble();
-    }
-    else if (wasJustEvaluated && !newInputAfterEval) {
-        // Нажали оператор после "=" без ввода нового числа → продолжаем выражение
-        ui->lbl_history->setText(current + " " + op + " ");
-        ui->leRes->clear();
-        lastResult = current.toDouble();
-    }
-    else if (!ui->lbl_history->text().isEmpty() && !current.isEmpty()) {
-        // Промежуточное вычисление
-        QString fullExpr = ui->lbl_history->text() + current;
-        bool ok;
-        double result = evaluateExpression(fullExpr, ok);
-
-        if (!ok) {
-            ui->leRes->setText("Ошибка вычисления");
-            ui->leRes->setStyleSheet("background-color: rgb(255, 200, 200);");
-            QMessageBox::critical(this, "Ошибка", "Невозможно вычислить выражение (возможно, деление на 0)");
-            errorState = true;
-            setButtonsEnabled(false);
-            return;
+    if (state == InputNumber) {
+        calculate(second_number, prev_operation);
+        if (prev_operation == "/" && second_number == 0) {
+            first_number = 0;
+            is_first_oper = true;
+            showMessage("Деление на ноль");
         }
-
-        ui->lbl_history->setText(QString::number(result) + " " + op + " ");
-        ui->leRes->clear();
-        lastResult = result;
-    }
-    else if (!current.isEmpty()) {
-        ui->lbl_history->setText(current + " " + op + " ");
-        ui->leRes->clear();
-        lastResult = current.toDouble();
     }
 
-    lastOperator = op;
-    hasLastOperation = true;
-    wasJustEvaluated = false;
-    newInputAfterEval = false;
+    ui->lbl_history->setText(QString::number(first_number) + " " + op);
+    prev_operation = op;
+    after_operation = true;
+    after_equal = false;
+    state = FirstDigit;
 }
 
+void MainWindow::on_equal_pushed()
+{
+    if (!after_equal) {
+        second_number = ui->leRes->text().toDouble();
+        equal_operation = prev_operation;
+    }
 
-void MainWindow::C()
+    if (after_operation) {
+        ui->lbl_history->setText(ui->lbl_history->text() + " " + ui->leRes->text() + " =");
+        calculate(second_number, equal_operation);
+        after_operation = false;
+    } else {
+        ui->lbl_history->setText(QString::number(first_number) + " " + equal_operation + " " + QString::number(second_number) + " =");
+        calculate(second_number, equal_operation);
+    }
+
+    after_equal = true;
+    state = FirstDigit;
+}
+
+void MainWindow::on_dot_pushed()
+{
+    QString val = ui->leRes->text();
+    if (state == FirstDigit)
+        ui->leRes->setText("0.");
+    else if (!val.contains("."))
+        ui->leRes->setText(val + ".");
+
+    state = InputNumber;
+}
+
+void MainWindow::on_inverse_pushed()
+{
+    QString val = ui->leRes->text();
+    if (val.isEmpty())
+        return;
+
+    double d = val.toDouble();
+    ui->leRes->setText(QString::number(-d));
+    state = InputNumber;
+}
+
+void MainWindow::on_CE_pushed()
+{
+    ui->leRes->setText("0");
+    state = FirstDigit;
+}
+
+void MainWindow::lclear()
 {
     ui->leRes->setText("0");
     ui->lbl_history->setText("");
-    ui->leRes->setStyleSheet("");
-    errorState = false;
-    setButtonsEnabled(true);
 
-    lastResult = 0;
-    lastOperand = 0;
-    lastOperator.clear();
-    hasLastOperation = false;
-    wasJustEvaluated = false;
-    newInputAfterEval = false;
+    state = FirstDigit;
+    first_number = 0;
+    second_number = 0;
+
+    is_first_oper = true;
+    after_operation = false;
+    after_equal = false;
+
+    prev_operation = "+";
 }
 
-
-void MainWindow::CE()
+void MainWindow::on_mem_pushed()
 {
-    if (errorState) return;
+    QPushButton* btn = (QPushButton*)sender();
+    QString cmd = btn->text();
 
-    ui->leRes->setText("0");
-    wasJustEvaluated = false;
-    newInputAfterEval = false;
-}
-
-
-void MainWindow::changer()
-{
-    if (errorState) return;
-
-    QString current = ui->leRes->text();
-    if (!current.isEmpty() && current != "0" && current != "Ошибка вычисления") {
-        double val = current.toDouble();
-        ui->leRes->setText(QString::number(-val));
-    }
-
-    wasJustEvaluated = false;
-    newInputAfterEval = true;
-}
-
-
-bool MainWindow::calc()
-{
-    if (errorState) return false;
-
-    QString current = ui->leRes->text();
-    QString history = ui->lbl_history->text();
-    bool ok;
-
-    if (!history.isEmpty() && !current.isEmpty() && !wasJustEvaluated) {
-        // Пример: 9 + 4 → =
-        QString expr = history + current;
-        double result = evaluateExpression(expr, ok);
-
-        if (!ok) {
-            ui->leRes->setText("Ошибка вычисления");
-            ui->leRes->setStyleSheet("background-color: rgb(255, 200, 200);");
-            QMessageBox::critical(this, "Ошибка", "Невозможно вычислить выражение (возможно, деление на 0)");
-            errorState = true;
-            setButtonsEnabled(false);
-            return false;
-        }
-
-        lastResult = result;
-        lastOperand = current.toDouble();
-        ui->leRes->setText(QString::number(result));
-        ui->lbl_history->setText(expr + " =");
-        hasLastOperation = true;
-    }
-    else if (hasLastOperation) {
-        // Повторное нажатие "="
-        QString expr = QString::number(lastResult) + " " + lastOperator + " " + QString::number(lastOperand);
-        double result = evaluateExpression(expr, ok);
-
-        if (!ok) {
-            ui->leRes->setText("Ошибка вычисления");
-            ui->leRes->setStyleSheet("background-color: rgb(255, 200, 200);");
-            QMessageBox::critical(this, "Ошибка", "Невозможно вычислить выражение (возможно, деление на 0)");
-            errorState = true;
-            setButtonsEnabled(false);
-            return false;
-        }
-
-        lastResult = result;
-        ui->leRes->setText(QString::number(result));
-        ui->lbl_history->setText(expr + " =");
-    }
-
-    wasJustEvaluated = true;
-    return true;
-}
-
-
-
-void MainWindow::setButtonsEnabled(bool enabled)
-{
-    QList<QPushButton*> buttons = {
-        ui->pb_0, ui->pb_1, ui->pb_2, ui->pb_3, ui->pb_4,
-        ui->pb_5, ui->pb_6, ui->pb_7, ui->pb_8, ui->pb_9,
-        ui->pb_MC, ui->pb_MR, ui->pb_MS, ui->pb_Mpl, ui->pb_Mmin,
-        ui->pb_CE, ui->pbplmin, ui->pbpl, ui->pbmin, ui->pbpr, ui->pbdiv,
-        ui->pbdot, ui->pbequal
-    };
-
-    for (QPushButton* button : buttons) {
-        button->setEnabled(enabled);
+    if (cmd == "M+") {
+        mem += ui->leRes->text().toDouble();
+        mem_ok = true;
+    } else if (cmd == "M-") {
+        mem -= ui->leRes->text().toDouble();
+        mem_ok = true;
+    } else if (cmd == "MS") {
+        mem = ui->leRes->text().toDouble();
+        mem_ok = true;
+    } else if (cmd == "MC") {
+        mem = 0;
+        mem_ok = false;
+        return;
+    } else if (cmd == "MR") {
+        if (mem_ok)
+            ui->leRes->setText(QString::number(mem));
+        return;
     }
 }
 
-double MainWindow::evaluateExpression(const QString &expr, bool &ok)
+void MainWindow::calculate(double second_number, const QString &operation)
 {
-    ok = true;
-    QString e = expr;
-    e.remove(' ');
+    after_operation = false;
 
-    auto prec = [](QChar op) {
-        if (op == '+' || op == '-') return 1;
-        if (op == '*' || op == '/') return 2;
-        return 0;
-    };
-
-    QVector<QString> output;
-    QStack<QChar> ops;
-    QString num;
-
-    for (int i = 0; i < e.length(); ++i) {
-        QChar c = e[i];
-
-        if (c == '-' && (i == 0 || (!e[i - 1].isDigit() && e[i - 1] != ')'))) {
-            num += c;
-            continue;
-        }
-
-        if (c.isDigit() || c == '.') {
-            num += c;
-        } else {
-            if (!num.isEmpty()) {
-                output.append(num);
-                num.clear();
+    if (is_first_oper) {
+        first_number += second_number;
+        is_first_oper = false;
+    } else {
+        if (operation == "+")
+            first_number += second_number;
+        else if (operation == "-")
+            first_number -= second_number;
+        else if (operation == "*")
+            first_number *= second_number;
+        else if (operation == "/") {
+            if (second_number == 0) {
+                lclear();
+                showMessage("Деление на ноль");
+                return;
             }
-
-            while (!ops.isEmpty() && prec(ops.top()) >= prec(c)) {
-                output.append(QString(ops.pop()));
-            }
-            ops.push(c);
+            first_number /= second_number;
         }
     }
 
-    if (!num.isEmpty()) output.append(num);
-    while (!ops.isEmpty()) output.append(QString(ops.pop()));
+    ui->leRes->setText(QString::number(first_number));
+}
 
-    QStack<double> stack;
-    for (const QString &t : output) {
-        if (t == "+" || t == "-" || t == "*" || t == "/") {
-            if (stack.size() < 2) {
-                ok = false;
-                return 0;
-            }
-            double b = stack.pop();
-            double a = stack.pop();
-
-            if (t == "/" && b == 0) {
-                ok = false;
-                return 0;
-            }
-
-            if (t == "+") stack.push(a + b);
-            else if (t == "-") stack.push(a - b);
-            else if (t == "*") stack.push(a * b);
-            else if (t == "/") stack.push(a / b);
-        } else {
-            bool convOk;
-            double val = t.toDouble(&convOk);
-            if (!convOk) {
-                ok = false;
-                return 0;
-            }
-            stack.push(val);
-        }
-    }
-
-    if (stack.size() != 1) {
-        ok = false;
-        return 0;
-    }
-
-    return stack.top();
+void MainWindow::showMessage(const QString &msg)
+{
+    QMessageBox::critical(this, "Ошибка", msg);
 }
