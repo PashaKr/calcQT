@@ -38,15 +38,15 @@ struct qt_meta_tag_ZN10MainWindowE_t {};
 #ifdef QT_MOC_HAS_STRINGDATA
 static constexpr auto qt_meta_stringdata_ZN10MainWindowE = QtMocHelpers::stringData(
     "MainWindow",
-    "on_digit_pushed",
+    "digitClicked",
     "",
-    "on_operator_pushed",
-    "on_equal_pushed",
-    "on_dot_pushed",
-    "on_inverse_pushed",
-    "on_CE_pushed",
-    "lclear",
-    "on_mem_pushed"
+    "operatorClicked",
+    "equalClicked",
+    "decimalClicked",
+    "signChanged",
+    "clearEntry",
+    "clearAll",
+    "memoryOperation"
 );
 #else  // !QT_MOC_HAS_STRINGDATA
 #error "qtmochelpers.h not found or too old."
@@ -97,21 +97,21 @@ Q_CONSTINIT const QMetaObject MainWindow::staticMetaObject = { {
     qt_incomplete_metaTypeArray<qt_meta_tag_ZN10MainWindowE_t,
         // Q_OBJECT / Q_GADGET
         QtPrivate::TypeAndForceComplete<MainWindow, std::true_type>,
-        // method 'on_digit_pushed'
+        // method 'digitClicked'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_operator_pushed'
+        // method 'operatorClicked'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_equal_pushed'
+        // method 'equalClicked'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_dot_pushed'
+        // method 'decimalClicked'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_inverse_pushed'
+        // method 'signChanged'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_CE_pushed'
+        // method 'clearEntry'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'lclear'
+        // method 'clearAll'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'on_mem_pushed'
+        // method 'memoryOperation'
         QtPrivate::TypeAndForceComplete<void, std::false_type>
     >,
     nullptr
@@ -122,14 +122,14 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
     auto *_t = static_cast<MainWindow *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
-        case 0: _t->on_digit_pushed(); break;
-        case 1: _t->on_operator_pushed(); break;
-        case 2: _t->on_equal_pushed(); break;
-        case 3: _t->on_dot_pushed(); break;
-        case 4: _t->on_inverse_pushed(); break;
-        case 5: _t->on_CE_pushed(); break;
-        case 6: _t->lclear(); break;
-        case 7: _t->on_mem_pushed(); break;
+        case 0: _t->digitClicked(); break;
+        case 1: _t->operatorClicked(); break;
+        case 2: _t->equalClicked(); break;
+        case 3: _t->decimalClicked(); break;
+        case 4: _t->signChanged(); break;
+        case 5: _t->clearEntry(); break;
+        case 6: _t->clearAll(); break;
+        case 7: _t->memoryOperation(); break;
         default: ;
         }
     }

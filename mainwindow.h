@@ -16,14 +16,14 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_digit_pushed();
-    void on_operator_pushed();
-    void on_equal_pushed();
-    void on_dot_pushed();
-    void on_inverse_pushed();
-    void on_CE_pushed();
-    void lclear();
-    void on_mem_pushed();
+    void digitClicked();
+    void operatorClicked();
+    void equalClicked();
+    void decimalClicked();
+    void signChanged();
+    void clearEntry();
+    void clearAll();
+    void memoryOperation();
 
 private:
     Ui::MainWindow *ui;
@@ -33,23 +33,24 @@ private:
         InputNumber
     };
 
-    State state;
+    State currentState;
+    double firstNumber;
+    double secondNumber;
+    double memoryValue;
+    QString currentOperation;
+    QString pendingOperation;
 
-    double first_number;
-    double second_number;
-    double mem;
+    bool isFirstOperation;
+    bool afterOperation;
+    bool afterEqual;
+    bool memoryEnabled;
+    bool errorOccurred;
 
-    bool is_first_oper;
-    bool after_operation;
-    bool after_equal;
-    bool mem_ok;
-
-    QString prev_operation;
-    QString equal_operation;
-
+    void initializeCalculator();
     void connectButtons();
-    void calculate(double second_number, const QString &operation);
-    void showMessage(const QString &msg);
+    void calculate(double operand, const QString &operation);
+    void updateDisplay(double value);
+    void showError(const QString &message);
 };
 
 #endif // MAINWINDOW_H

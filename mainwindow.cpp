@@ -1,5 +1,6 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QPushButton>
 #include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -7,18 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
-    state = FirstDigit;
-    first_number = 0;
-    second_number = 0;
-    mem = 0;
-
-    is_first_oper = true;
-    after_operation = false;
-    after_equal = false;
-    mem_ok = false;
-    prev_operation = "+";
-
+    initializeCalculator();
     connectButtons();
 }
 
@@ -27,191 +17,245 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::initializeCalculator()
+{
+    currentState = FirstDigit;
+    firstNumber = 0;
+    secondNumber = 0;
+    memoryValue = 0;
+    currentOperation = "";
+    pendingOperation = "+";
+    isFirstOperation = true;
+    afterOperation = false;
+    afterEqual = false;
+    memoryEnabled = false;
+    errorOccurred = false;
+
+    ui->leRes->setText("0");
+    ui->lbl_history->clear();
+}
+
 void MainWindow::connectButtons()
 {
-    QPushButton* digits[10] = {
+    QPushButton* digitButtons[10] = {
         ui->pb_0, ui->pb_1, ui->pb_2, ui->pb_3, ui->pb_4,
         ui->pb_5, ui->pb_6, ui->pb_7, ui->pb_8, ui->pb_9
     };
 
-    for (int i = 0; i < 10; ++i)
-        connect(digits[i], SIGNAL(clicked()), this, SLOT(on_digit_pushed()));
+    for (int i = 0; i < 10; ++i) {
+        connect(digitButtons[i], &QPushButton::clicked, this, &MainWindow::digitClicked);
+    }
+    connect(ui->pbpl, &QPushButton::clicked, this, &MainWindow::operatorClicked);
+    connect(ui->pbmin, &QPushButton::clicked, this, &MainWindow::operatorClicked);
+    connect(ui->pbpr, &QPushButton::clicked, this, &MainWindow::operatorClicked);
+    connect(ui->pbdiv, &QPushButton::clicked, this, &MainWindow::operatorClicked);
 
-    connect(ui->pbpl, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
-    connect(ui->pbmin, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
-    connect(ui->pbpr, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
-    connect(ui->pbdiv, SIGNAL(clicked()), this, SLOT(on_operator_pushed()));
+    connect(ui->pbequal, &QPushButton::clicked, this, &MainWindow::equalClicked);
+    connect(ui->pb_C, &QPushButton::clicked, this, &MainWindow::clearAll);
+    connect(ui->pb_CE, &QPushButton::clicked, this, &MainWindow::clearEntry);
+    connect(ui->pbdot, &QPushButton::clicked, this, &MainWindow::decimalClicked);
+    connect(ui->pbplmin, &QPushButton::clicked, this, &MainWindow::signChanged);
 
-    connect(ui->pbequal, SIGNAL(clicked()), this, SLOT(on_equal_pushed()));
-    connect(ui->pb_C, SIGNAL(clicked()), this, SLOT(lclear()));
-    connect(ui->pb_CE, SIGNAL(clicked()), this, SLOT(on_CE_pushed()));
-    connect(ui->pbdot, SIGNAL(clicked()), this, SLOT(on_dot_pushed()));
-    connect(ui->pbplmin, SIGNAL(clicked()), this, SLOT(on_inverse_pushed()));
-
-    connect(ui->pb_MC, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
-    connect(ui->pb_MR, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
-    connect(ui->pb_MS, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
-    connect(ui->pb_Mpl, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
-    connect(ui->pb_Mmin, SIGNAL(clicked()), this, SLOT(on_mem_pushed()));
+    connect(ui->pb_MC, &QPushButton::clicked, this, &MainWindow::memoryOperation);
+    connect(ui->pb_MR, &QPushButton::clicked, this, &MainWindow::memoryOperation);
+    connect(ui->pb_MS, &QPushButton::clicked, this, &MainWindow::memoryOperation);
+    connect(ui->pb_Mpl, &QPushButton::clicked, this, &MainWindow::memoryOperation);
+    connect(ui->pb_Mmin, &QPushButton::clicked, this, &MainWindow::memoryOperation);
 }
 
-void MainWindow::on_digit_pushed()
+void MainWindow::digitClicked()
 {
-    QPushButton* btn = (QPushButton*)sender();
-    QString digit = btn->text();
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
+    }
 
-    if (state == FirstDigit) {
-        if (after_equal)
-            lclear();
-        ui->leRes->setText("");
-        if (digit != "0")
-            state = InputNumber;
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    QString digit = button->text();
+
+    if (currentState == FirstDigit) {
+        if (afterEqual)
+            clearAll();
+        ui->leRes->clear();
+        currentState = InputNumber;
     }
 
     ui->leRes->setText(ui->leRes->text() + digit);
 }
 
-void MainWindow::on_operator_pushed()
+void MainWindow::operatorClicked()
 {
-    QPushButton* btn = (QPushButton*)sender();
-    QString op = btn->text();
-
-    second_number = ui->leRes->text().toDouble();
-    equal_operation = op;
-
-    if (state == InputNumber) {
-        calculate(second_number, prev_operation);
-        if (prev_operation == "/" && second_number == 0) {
-            first_number = 0;
-            is_first_oper = true;
-            showMessage("Деление на ноль");
-        }
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
     }
 
-    ui->lbl_history->setText(QString::number(first_number) + " " + op);
-    prev_operation = op;
-    after_operation = true;
-    after_equal = false;
-    state = FirstDigit;
+    if (pendingOperation == "/" && ui->leRes->text().toDouble() == 0) {
+        showError("Division by zero");
+        return;
+    }
+
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    QString newOperator = button->text();
+
+    if (currentState == InputNumber) {
+        secondNumber = ui->leRes->text().toDouble();
+        calculate(secondNumber, pendingOperation);
+    }
+
+    pendingOperation = newOperator;
+    currentOperation = newOperator;
+    ui->lbl_history->setText(QString::number(firstNumber) + " " + newOperator);
+    afterOperation = true;
+    afterEqual = false;
+    currentState = FirstDigit;
 }
 
-void MainWindow::on_equal_pushed()
+void MainWindow::equalClicked()
 {
-    if (!after_equal) {
-        second_number = ui->leRes->text().toDouble();
-        equal_operation = prev_operation;
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
     }
 
-    if (after_operation) {
+    if (pendingOperation == "/" && ui->leRes->text().toDouble() == 0) {
+        showError("Division by zero");
+        return;
+    }
+
+    if (!afterEqual) {
+        secondNumber = ui->leRes->text().toDouble();
+    }
+
+    if (currentState == InputNumber || afterOperation) {
         ui->lbl_history->setText(ui->lbl_history->text() + " " + ui->leRes->text() + " =");
-        calculate(second_number, equal_operation);
-        after_operation = false;
-    } else {
-        ui->lbl_history->setText(QString::number(first_number) + " " + equal_operation + " " + QString::number(second_number) + " =");
-        calculate(second_number, equal_operation);
+        calculate(secondNumber, pendingOperation);
+    }
+    else {
+        ui->lbl_history->setText(QString::number(firstNumber) + " " + pendingOperation + " " + QString::number(secondNumber) + " =");
+        calculate(secondNumber, pendingOperation);
     }
 
-    after_equal = true;
-    state = FirstDigit;
+    afterEqual = true;
+    currentState = FirstDigit;
 }
 
-void MainWindow::on_dot_pushed()
+void MainWindow::decimalClicked()
 {
-    QString val = ui->leRes->text();
-    if (state == FirstDigit)
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
+    }
+
+    QString current = ui->leRes->text();
+    if (currentState == FirstDigit) {
         ui->leRes->setText("0.");
-    else if (!val.contains("."))
-        ui->leRes->setText(val + ".");
-
-    state = InputNumber;
-}
-
-void MainWindow::on_inverse_pushed()
-{
-    QString val = ui->leRes->text();
-    if (val.isEmpty())
-        return;
-
-    double d = val.toDouble();
-    ui->leRes->setText(QString::number(-d));
-    state = InputNumber;
-}
-
-void MainWindow::on_CE_pushed()
-{
-    ui->leRes->setText("0");
-    state = FirstDigit;
-}
-
-void MainWindow::lclear()
-{
-    ui->leRes->setText("0");
-    ui->lbl_history->setText("");
-
-    state = FirstDigit;
-    first_number = 0;
-    second_number = 0;
-
-    is_first_oper = true;
-    after_operation = false;
-    after_equal = false;
-
-    prev_operation = "+";
-}
-
-void MainWindow::on_mem_pushed()
-{
-    QPushButton* btn = (QPushButton*)sender();
-    QString cmd = btn->text();
-
-    if (cmd == "M+") {
-        mem += ui->leRes->text().toDouble();
-        mem_ok = true;
-    } else if (cmd == "M-") {
-        mem -= ui->leRes->text().toDouble();
-        mem_ok = true;
-    } else if (cmd == "MS") {
-        mem = ui->leRes->text().toDouble();
-        mem_ok = true;
-    } else if (cmd == "MC") {
-        mem = 0;
-        mem_ok = false;
-        return;
-    } else if (cmd == "MR") {
-        if (mem_ok)
-            ui->leRes->setText(QString::number(mem));
-        return;
+        currentState = InputNumber;
+    }
+    else if (!current.contains('.')) {
+        ui->leRes->setText(current + ".");
     }
 }
 
-void MainWindow::calculate(double second_number, const QString &operation)
+void MainWindow::signChanged()
 {
-    after_operation = false;
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
+    }
 
-    if (is_first_oper) {
-        first_number += second_number;
-        is_first_oper = false;
-    } else {
+    QString current = ui->leRes->text();
+    if (!current.isEmpty()) {
+        double value = current.toDouble();
+        ui->leRes->setText(QString::number(-value));
+    }
+}
+
+void MainWindow::clearEntry()
+{
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
+    }
+
+    ui->leRes->setText("0");
+    currentState = FirstDigit;
+}
+
+void MainWindow::clearAll()
+{
+    ui->leRes->setText("0");
+    ui->lbl_history->clear();
+    firstNumber = 0;
+    secondNumber = 0;
+    currentOperation = "";
+    pendingOperation = "+";
+    isFirstOperation = true;
+    afterOperation = false;
+    afterEqual = false;
+    currentState = FirstDigit;
+    errorOccurred = false;
+}
+
+void MainWindow::memoryOperation()
+{
+    if (errorOccurred) {
+        showError("Division by zero");
+        return;
+    }
+
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    QString operation = button->text();
+    double currentValue = ui->leRes->text().toDouble();
+
+    if (operation == "MC") {
+        memoryValue = 0;
+        memoryEnabled = false;
+    }
+    else if (operation == "MR" && memoryEnabled) {
+        ui->leRes->setText(QString::number(memoryValue));
+    }
+    else if (operation == "MS") {
+        memoryValue = currentValue;
+        memoryEnabled = true;
+    }
+    else if (operation == "M+" && memoryEnabled) {
+        memoryValue += currentValue;
+    }
+    else if (operation == "M-" && memoryEnabled) {
+        memoryValue -= currentValue;
+    }
+}
+
+void MainWindow::calculate(double operand, const QString &operation)
+{
+    if (isFirstOperation) {
+        firstNumber = operand;
+        isFirstOperation = false;
+    }
+    else {
         if (operation == "+")
-            first_number += second_number;
+            firstNumber += operand;
         else if (operation == "-")
-            first_number -= second_number;
+            firstNumber -= operand;
         else if (operation == "*")
-            first_number *= second_number;
+            firstNumber *= operand;
         else if (operation == "/") {
-            if (second_number == 0) {
-                lclear();
-                showMessage("Деление на ноль");
+            if (operand == 0) {
+                showError("Division by zero");
                 return;
             }
-            first_number /= second_number;
+            firstNumber /= operand;
         }
     }
-
-    ui->leRes->setText(QString::number(first_number));
+    ui->leRes->setText(QString::number(firstNumber));
 }
 
-void MainWindow::showMessage(const QString &msg)
+void MainWindow::showError(const QString &message)
 {
-    QMessageBox::critical(this, "Ошибка", msg);
+    if (!errorOccurred) {
+        errorOccurred = true;
+        ui->leRes->setText("Error");
+        QMessageBox::critical(this, "Error", message);
+    }
 }
